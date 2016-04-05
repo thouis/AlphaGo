@@ -1,6 +1,6 @@
 class MCTS(object):
-	pass
+    pass
 
 
 class ParallelMCTS(MCTS):
-	pass
+    pass
