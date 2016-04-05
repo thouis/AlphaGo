@@ -96,7 +96,8 @@ def run_training(cmd_line_args=None):
     parser.add_argument("--verbose", "-v", help="Turn on verbose mode", default=False, action="store_true")
     # slightly fancier args
     parser.add_argument("--weights", help="Name of a .h5 weights file (in the output directory) to load to resume training", default=None)
-    parser.add_argument("--train-val-test", help="Fraction of data to use for training/val/test. Must sum to 1. Invalid if restarting training", nargs=3, type=float, default=[0.93, .05, .02])
+    parser.add_argument("--train-val-test", help="Fraction of data to use for training/val/test. Must sum to 1. Invalid if restarting training",
+                        nargs=3, type=float, default=[0.93, .05, .02])
     # TODO - an argument to specify which transformations to use, put it in metadata
 
     if cmd_line_args is None:
