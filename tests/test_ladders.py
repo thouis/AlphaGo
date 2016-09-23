@@ -3,8 +3,8 @@ import unittest
 
 import parseboard
 
-class TestLadder(unittest.TestCase):
 
+class TestLadder(unittest.TestCase):
     def test_captured_1(self):
         st, moves = parseboard.parse("d b c . . . .|"
                                      "B W a . . . .|"
