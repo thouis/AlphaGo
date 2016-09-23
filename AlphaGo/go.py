@@ -356,8 +356,6 @@ class GameState(object):
             potential_prey = [prey]
 
         for (prey_x, prey_y) in potential_prey:
-            assert action in self.liberty_sets[prey_x][prey_y]
-
             # attempt to capture the group at prey_x, prey_y in a ladder
             tmp = self.copy()
             tmp.do_move(action)
@@ -366,7 +364,6 @@ class GameState(object):
             # - extensions from the remaining liberty of the prey group.
             # - captures of enemy groups adjacent to the prey group.
             possible_escapes = tmp.liberty_sets[prey_x][prey_y].copy()
-            assert len(possible_escapes) == 1
 
             # Check if any hunter groups adjacent to the prey groups
             # are in atari.  Capturing these groups are potential escapes.
