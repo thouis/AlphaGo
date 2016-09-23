@@ -338,8 +338,8 @@ class GameState(object):
         """
 
         # ignore illegal moves
-            if not self.is_legal(action):
-                return False
+        if not self.is_legal(action):
+            return False
 
         hunter_player = self.current_player
         prey_player = - self.current_player
@@ -347,10 +347,10 @@ class GameState(object):
         if prey is None:
             # default case is to check all adjacent prey_player groups that
             # have 2 liberties
-            potential_prey = [(nx, ny) for (nx, ny) in self._neighbors(action)
+            neighbor_groups_stones = [next(iter(group)) for group in self.get_groups_around(action)]
+            potential_prey = [(nx, ny) for (nx, ny) in neighbor_groups_stones
                               if (self.board[nx][ny] == prey_player and
                                   self.liberty_counts[nx][ny] == 2)]
-            # TODO: filter out duplicate groups
         else:
             # we are checking a specific group (called from is_ladder_escape)
             potential_prey = [prey]
@@ -400,18 +400,18 @@ class GameState(object):
         """
 
         # ignore illegal moves
-            if not self.is_legal(action):
-                return False
+        if not self.is_legal(action):
+            return False
 
         prey_player = self.current_player
 
         if prey is None:
             # default case is to check all adjacent groups that might be in a
             # ladder (i.e., with one liberty)
-            potential_prey = [(px, py) for (px, py) in self._neighbors(action)
-                              if (self.board[px][py] == prey_player and
-                                  self.liberty_counts[px][py] == 1)]
-            # TODO: filter out duplicate groups
+            neighbor_groups_stones = [next(iter(group)) for group in self.get_groups_around(action)]
+            potential_prey = [(nx, ny) for (nx, ny) in neighbor_groups_stones
+                              if (self.board[nx][ny] == prey_player and
+                                  self.liberty_counts[nx][ny] == 1)]
         else:
             # we are checking a specific group (called from is_ladder_capture)
             potential_prey = [prey]

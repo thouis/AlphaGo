@@ -8,10 +8,12 @@ def parse(boardstr):
 
     '''
 
-    st = GameState()
+    boardstr = boardstr.replace(' ', '')
+    board_size = max(boardstr.index('|'), boardstr.count('|'))
+
+    st = GameState(size=board_size)
     moves = {}
 
-    boardstr = boardstr.replace(' ', '')
     for row, rowstr in enumerate(boardstr.split('|')):
         for col, c in enumerate(rowstr):
             if c == '.':
