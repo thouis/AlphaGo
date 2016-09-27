@@ -1,4 +1,8 @@
 import numpy as np
+import pyximport
+pyximport.install(setup_args={'include_dirs': np.get_include()})
+
+from cBoard import Board
 
 WHITE = -1
 BLACK = +1
@@ -16,6 +20,7 @@ class GameState(object):
 
     def __init__(self, size=19, komi=7.5, enforce_superko=False):
         self.board = np.zeros((size, size))
+        self.cboard = Board(size, size)
         self.board.fill(EMPTY)
         self.size = size
         self.current_player = BLACK
@@ -508,6 +513,9 @@ class GameState(object):
         color = color or self.current_player
         reset_player = self.current_player
         self.current_player = color
+
+        assert np.all(self.liberty_counts == self.cboard.get_liberties())
+
         if self.is_legal(action):
             # reset ko
             self.ko = None
@@ -515,6 +523,7 @@ class GameState(object):
             self.stone_ages[self.stone_ages >= 0] += 1
             if action is not PASS_MOVE:
                 (x, y) = action
+                self.cboard.play_stone(x, y, color)
                 self.board[x][y] = color
                 self._update_hash(action, color)
                 self._update_neighbors(action)
