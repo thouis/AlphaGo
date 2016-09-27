@@ -9,6 +9,16 @@ BLACK = +1
 EMPTY = 0
 PASS_MOVE = None
 
+def print_board(b):
+    print "   ",
+    for i in range(19):
+        print "{:02d}".format(i),
+    print ""
+    for i, l in enumerate(b):
+        print '{:02d} '.format(i),
+        for v in l:
+            print '{} '.format('.#o'[v]),
+        print
 
 class GameState(object):
     """State of a game of Go and some basic functions to interact with it
@@ -514,7 +524,13 @@ class GameState(object):
         reset_player = self.current_player
         self.current_player = color
 
-        assert np.all(self.liberty_counts == self.cboard.get_liberties())
+        comp = self.liberty_counts == self.cboard.get_liberties()
+        if not np.all(comp):
+            print action, 'WHITE' if color == WHITE else 'BLACK', np.where(~ comp)
+            print "py", self.liberty_counts[~ comp]
+            print "cy", self.cboard.get_liberties()[~ comp]
+            print_board(self.board.astype(int))
+            assert False
 
         if self.is_legal(action):
             # reset ko

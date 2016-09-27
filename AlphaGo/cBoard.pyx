@@ -55,6 +55,7 @@ cdef class Board:
     cdef remove_stone(self, int xo, int yo):
         # self.push_undo(xo, yo, REMOVE, self.stones[xo][yo])
         self.stones[xo][yo] = EMPTY
+        self.group_idx[xo][yo] = 0
 
     cdef group_color(self, index):
         cdef int xo, yo
