@@ -1,10 +1,12 @@
 '''fast go board in cython'''
 
-WHITE = -1
+# constants
+WHITE = -1  # needs to be opposite of BLACK
 BLACK = +1
 EMPTY = 0
 BORDER = -3
 MARKED = -4
+PASS_MOVE = None
 
 # undo steps
 ADD = 1
@@ -27,6 +29,7 @@ def group_index_to_position(idx):
 
 cdef class Board:
     cdef public int width, height
+    cdef public ko_x, ko_y  # -1 if no ko, location of ko otherwise
 
     # we wrap the board with an extra row&column for simpler neighbor checks, below
     cdef int stones[21][21]  # -1/0/1 = WHITE/EMPTY/BLACK/BORDER/MARKED
@@ -37,6 +40,7 @@ cdef class Board:
         cdef int i, j
         self.width = w
         self.height = h
+        self.ko_x
         for i in range(21):
             for j in range(21):
                 if (i == 0) or (j == 0) or (i > w) or (j > h):
@@ -87,17 +91,19 @@ cdef class Board:
         xo, yo = group_index_to_position(group_idx)
         return self.remove_dead_recursive(xo, yo, self.stones[xo][yo])
 
+
     cdef set_group_index_recursive(self, int xo, int yo, int old_group_idx, int new_group_idx):
         self.group_idx[xo][yo] = new_group_idx
         for xoff, yoff in neighbor_offsets:
             if self.group_idx[xo + xoff][yo + yoff] == old_group_idx:
                 self.set_group_index_recursive(xo + xoff, yo + yoff, old_group_idx, new_group_idx)
 
+
     cdef set_group_index(self, int old_group_idx, int new_group_idx):
         cdef int xo, yo
         xo, yo = group_index_to_position(old_group_idx)
         return self.set_group_index_recursive(xo, yo, old_group_idx, new_group_idx)
-    
+
 
     cdef mark_liberties_recursive(self, int xo, int yo, int group_idx):
         '''Marks all liberties around a group as MARKED.  As a side effect, the
@@ -171,6 +177,23 @@ cdef class Board:
         # recompute liberty counts for new group
         self.liberty_counts[min_group_idx] = self.count_liberties(min_group_idx)
 
+        # check for ko - removed one stone, one liberty, group size of one (no
+        # same-color neighbors)
+        if ((num_removed == 1) and
+            (self.liberty_counts[min_group_idx] == 1) and
+            (not self.has_neighbor(xo, yo, color))):
+            # ko
+            self.ko_x = xo
+            self.ko_y = yo
+        else:
+            self.ko_x = self.ko_y = -1  # not ko
+
+    cdef has_neighbor(self, int xo, int yo, int color) int:
+        return ((self.stones[xo - 1][yo] == color) or
+                (self.stones[xo + 1][yo] == color) or
+                (self.stones[xo][yo - 1] == color) or
+                (self.stones[xo][yo + 1] == color))
+
     def get_liberties(self):
         cdef int _libs[19][19]
         cdef int [:, :] libs = _libs
@@ -192,3 +215,60 @@ cdef class Board:
     def get_groups(self):
         cdef int [:, :] groups = self.group_idx
         return np.copy(groups)[1:-1, 1:-1]
+
+
+    cpdef is_suicide(self, int x, int y, int color):
+        cdef int xo = x + 1
+        cdef int yo = y + 1
+
+        # not suicide if we're next to an empty square
+        if self.has_neighbor(xo, yo, EMPTY):
+            return False
+
+        # not suicide if we play next to a group of the same color with another
+        # liberty somewhere
+        for idx in self.groups_around(xo, yo, color):
+            if self.liberty_counts[idx] > 1:
+                return False
+
+        # not suicide if the move kills an enemy group
+        for idx in self.groups_around(xo, yo, -color):
+            if self.liberty_counts[idx] == 1:
+                return False
+
+        # otherwise, move is suicide
+        return True
+
+
+    cpdef is_legal(self, action):
+        cdef int xo, yo
+
+        # PASS is always legal
+        if action == PASS_MOVE:
+            return True
+
+        # offset move to padded board
+        xo = action[0] + 1
+        yo = action[1] + 1
+
+        # check for on board
+        if not (1 <= xo <= self.width) or not (1 <= yo <= self.height):
+            return False
+
+        # check for empty intersection
+        if self.stones[xo, yo] != EMPTY:
+            return False
+
+        # check for suicide
+        if self.is_suicide(xo - 1, yo - 1):  # offset back to python board indices
+            return False
+
+        # check for ko
+        if xo == self.ko_x and yo == self.ko_y:
+            return False
+
+        # if self.enforce_superko and self.is_positional_superko(action):
+        #    return False
+
+        # otherwise legal
+        return True
